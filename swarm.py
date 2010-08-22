@@ -60,8 +60,12 @@ def nextframe(swarm):
     return [a.move(swarm) for a in swarm]
 
 if __name__ == '__main__':
+    import platform
+    if platform.machine() in ['i386', 'i686']:
+        import psyco
+        psyco.full()
     swarm = [Agent() for x in range(SN)]
     print '\n'.join(map(str, swarm))+'\ndone'
-    for i in range(2000):
+    while True:
         nextframe(swarm)
         print '\n'.join(map(str, swarm))+'\ndone'
