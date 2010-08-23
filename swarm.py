@@ -4,20 +4,10 @@ import random
 from math import sqrt
 
 # number of swarms
-SN = 200
-REPEL_FORCE = 10
-ATTRACT_FORCE = -1000
+Fishes = 100
+Sharks = 2
+Planktii = 100
 VIEWPORT = 100
-
-Creatures=[[[{'min': 0, 'max': 20, 'c': 10 }, {'min': 50, 'max': 300, 'c': -1000 }],
-            [{'min': 0, 'max': 700, 'c': 100 }],
-            [{'min': 0, 'max': 300, 'c': -1000 }]],
-           [[{'min': 0, 'max': 600, 'c': -1200 }],
-            [{'min': 0, 'max': 100, 'c': 10 }, {'min': 100, 'max': 800, 'c': -1000 }],
-            [{'min': 0, 'max': 200, 'c': 10 }]],
-           [[{'min': 0, 'max': 5, 'c': 10 }],
-            [{'min': 0, 'max': 300, 'c': -1000 }],
-            [{'min': 0, 'max': 50, 'c': 10 }, {'min': 0, 'max': 100, 'c': -1000 }]]]
 
 class Vector():
     def __init__(self,x=0,y=0,z=0):
@@ -30,11 +20,11 @@ class Vector():
             other=Vector()
         return sqrt(pow(self.x-other.x, 2)+pow(self.y-other.y, 2)+pow(self.z-other.z, 2))
 
-    def normalize(self, d):
+    def normalize(self, d,c):
         if not d==0:
-            self.x/=d
-            self.y/=d
-            self.z/=d
+            self.x=(self.x*c)/d
+            self.y=(self.y*c)/d
+            self.z=(self.z*c)/d
         return self
 
     def gravity(self, other, d, c):
@@ -50,14 +40,12 @@ class Vector():
         return '%f %f %f' % (self.x/VIEWPORT, self.y/VIEWPORT, self.z/VIEWPORT)
 
 class Agent:
-    def __init__(self, race=0):
-        self.pos        = Vector((random.random()-0.5)*2000,(random.random()-0.5)*2000,(random.random()-0.5)*2000)
-        self.zones      = Creatures[race]
-        self.race       = race
-        self.vitality   = 1
-
     def __str__(self):
-        return str(self.pos)
+        #return "%s" % (self.vitality)
+        if self.vitality>0:
+            return "%s %s" % (str(self.pos), self.race)
+        else:
+            return ''
 
     def move(self,swarm):
         v=Vector()
@@ -67,18 +55,76 @@ class Agent:
             for zone in self.zones[agent.race]:
                 if zone['min'] < d <= zone['max']:
                     v.add(p.gravity(agent.pos,d,zone['c']))
-        self.pos.add(v.normalize(v.dist()))
+            # handle health
+            if agent.race != self.race:
+                if d<5:
+                    # do damage/nutrition
+                    self.vitality+=self.nutrition[agent.race]
+            elif d<self.matingZone and self.vitality>1:
+                # give birth
+                Nursery.append(self.birth())
+                self.vitality=0.7
+        self.pos.add(v.normalize(v.dist(),self.vitality*self.speed))
 
-def nextframe(swarm):
-    return [a.move(swarm) for a in swarm]
+class Fish(Agent):
+    def __init__(self):
+        self.pos        = Vector((random.random()-0.5)*1000,(random.random()-0.5)*1000,(random.random()-0.5)*1000)
+        self.zones      = [[{'min': 0, 'max': 20, 'c': 100 }, {'min': 50, 'max': 300, 'c': -1000 }],
+                           [{'min': 0, 'max': 700, 'c': 1000 }],
+                           [{'min': 0, 'max': 1000, 'c': -1000 }]]
+        self.matingZone = 30
+        self.speed      = 1
+        self.race       = 0
+        self.vitality   = 0.999999999999
+        self.nutrition  = {1: -0.7,
+                           2: 0.4}
+
+    def birth(self):
+        return Fish()
+
+class Shark(Agent):
+    def __init__(self):
+        self.pos        = Vector((random.random()-0.5)*1000,(random.random()-0.5)*1000,(random.random()-0.5)*1000)
+        self.zones      = [[{'min': 0, 'max': 600, 'c': -1200 }],
+                           [{'min': 0, 'max': 100, 'c': 10 }, {'min': 200, 'max': 800, 'c': -1000 }],
+                           [{'min': 0, 'max': 20, 'c': 1 }]]
+        self.matingZone = 0.0000001
+        self.speed      = 2
+        self.race       = 1
+        self.vitality   = 0.8
+        self.nutrition  = {0: 0.1,
+                           2: -0.3}
+    def birth(self):
+        return Shark()
+
+class Plankton(Agent):
+    def __init__(self):
+        self.pos        = Vector((random.random()-0.5)*1000,(random.random()-0.5)*1000,(random.random()-0.5)*1000)
+        self.zones      = [[{'min': 0, 'max': 5, 'c': 10 }],
+                           [{'min': 0, 'max': 1000, 'c': -1000 }],
+                           []]
+        self.matingZone = 1000000000000000
+        self.speed      = 0.1
+        self.race       = 2
+        self.vitality   = 1
+        self.nutrition  = {0: -1, 1: 0.8}
+
+    def birth(self):
+        return Plankton()
+
+Nursery=[]
 
 if __name__ == '__main__':
     import platform
     if platform.machine() in ['i386', 'i686']:
         import psyco
         psyco.full()
-    swarm = [Agent() for x in range(SN)]
+    swarm = [Fish() for x in range(Fishes)]+[Shark() for x in range(Sharks)]+[Plankton() for x in range(Planktii)]
     print '\n'.join(map(str, swarm))+'\ndone'
     while True:
-        nextframe(swarm)
+        for a in swarm: a.move(swarm)
+        # handle life and death
+        swarm=filter(lambda x: x.vitality>0,swarm)
+        swarm+=Nursery
+        Nursery=[]
         print '\n'.join(map(str, swarm))+'\ndone'
