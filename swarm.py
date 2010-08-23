@@ -4,7 +4,10 @@ import random
 from math import sqrt
 
 # number of swarms
-SN = 100
+SN = 200
+REPEL_FORCE = 10
+ATTRACT_FORCE = -1000
+VIEWPORT = 100
 
 class Vector():
     def __init__(self,x=0,y=0,z=0):
@@ -34,7 +37,7 @@ class Vector():
         self.z+=other.z
 
     def __str__(self):
-        return '%f %f %f' % (self.x/100, self.y/100, self.z/100)
+        return '%f %f %f' % (self.x/VIEWPORT, self.y/VIEWPORT, self.z/VIEWPORT)
 
 class Agent:
     def __init__(self, avoid=(0, 20), attract=(50,300)):
@@ -51,9 +54,9 @@ class Agent:
         for agent in swarm:
             d=self.pos.dist(agent.pos)
             if self.avoid[0] < d <=self.avoid[1]:
-                v.add(p.gravity(agent.pos,d,10))
+                v.add(p.gravity(agent.pos,d,REPEL_FORCE))
             elif self.attract[0] < d <=self.attract[1]:
-                v.add(p.gravity(agent.pos,d,-1000))
+                v.add(p.gravity(agent.pos,d,ATTRACT_FORCE))
         self.pos.add(v.normalize(v.dist()))
 
 def nextframe(swarm):
