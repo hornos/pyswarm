@@ -9,6 +9,16 @@ REPEL_FORCE = 10
 ATTRACT_FORCE = -1000
 VIEWPORT = 100
 
+Creatures=[[[{'min': 0, 'max': 20, 'c': 10 }, {'min': 50, 'max': 300, 'c': -1000 }],
+            [{'min': 0, 'max': 700, 'c': 100 }],
+            [{'min': 0, 'max': 300, 'c': -1000 }]],
+           [[{'min': 0, 'max': 600, 'c': -1200 }],
+            [{'min': 0, 'max': 100, 'c': 10 }, {'min': 100, 'max': 800, 'c': -1000 }],
+            [{'min': 0, 'max': 200, 'c': 10 }]],
+           [[{'min': 0, 'max': 5, 'c': 10 }],
+            [{'min': 0, 'max': 300, 'c': -1000 }],
+            [{'min': 0, 'max': 50, 'c': 10 }, {'min': 0, 'max': 100, 'c': -1000 }]]]
+
 class Vector():
     def __init__(self,x=0,y=0,z=0):
         self.x=x
@@ -40,10 +50,11 @@ class Vector():
         return '%f %f %f' % (self.x/VIEWPORT, self.y/VIEWPORT, self.z/VIEWPORT)
 
 class Agent:
-    def __init__(self, avoid=(0, 20), attract=(50,300)):
-        self.pos        = Vector((random.random()-0.5)*800,(random.random()-0.5)*800,(random.random()-0.5)*800)
-        self.avoid      = avoid
-        self.attract    = attract
+    def __init__(self, race=0):
+        self.pos        = Vector((random.random()-0.5)*2000,(random.random()-0.5)*2000,(random.random()-0.5)*2000)
+        self.zones      = Creatures[race]
+        self.race       = race
+        self.vitality   = 1
 
     def __str__(self):
         return str(self.pos)
@@ -53,10 +64,9 @@ class Agent:
         p=self.pos
         for agent in swarm:
             d=self.pos.dist(agent.pos)
-            if self.avoid[0] < d <=self.avoid[1]:
-                v.add(p.gravity(agent.pos,d,REPEL_FORCE))
-            elif self.attract[0] < d <=self.attract[1]:
-                v.add(p.gravity(agent.pos,d,ATTRACT_FORCE))
+            for zone in self.zones[agent.race]:
+                if zone['min'] < d <= zone['max']:
+                    v.add(p.gravity(agent.pos,d,zone['c']))
         self.pos.add(v.normalize(v.dist()))
 
 def nextframe(swarm):
