@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.6
 
-import random
+import random, sys
 from math import sqrt
 
 # number of swarms
@@ -54,9 +54,10 @@ class Agent:
         for agent in swarm:
             d=self.pos.dist(agent.pos)
             # calculate vector of next move
-            for zone in self.zones[agent.species]:
-                if zone['min']/self.vitality < d <= zone['max']/self.vitality:
-                    v.add(p.gravity(agent.pos,d,zone['c']))
+            if self.species != '2':
+                for zone in self.zones[agent.species]:
+                    if zone['min']/self.vitality < d <= zone['max']/self.vitality:
+                        v.add(p.gravity(agent.pos,d,zone['c']))
             # handle health
             if agent.species == self.prey and d<self.eatingZone and agent.vitality>0:
                 # do damage/nutrition
@@ -79,14 +80,14 @@ class Fish(Agent):
         self.speed      = 1
         self.vitality   = 0.7
         self.pos        = Vector((random.random()-0.5)*1000,(random.random()-0.5)*1000,(random.random()-0.5)*1000)
-        self.zones      = [[{'min': 0, 'max': 20, 'c': 100 }, {'min': 50, 'max': 300, 'c': -1000 }],
-                           [{'min': 0, 'max': 700, 'c': 1300 }],
-                           [{'min': 0, 'max': 1000, 'c': -1100 }]]
-        self.matingZone = 80
+        self.zones      = [[{'min': 0, 'max': 20, 'c': 100 }, {'min': 50, 'max': 200, 'c': -1000 }],
+                           [{'min': 0, 'max': 700, 'c': 2000 }],
+                           [{'min': 0, 'max': 1000, 'c': -1500 }]]
+        self.matingZone = 30
         self.eatingZone = 40
         self.prey       = 2
         self.nutrition  = {1: -0.7,
-                           2: 0.2}
+                           2: 0.10}
         self.hunger     = -0.000001
 
     def birth(self):
@@ -104,8 +105,8 @@ class Shark(Agent):
         self.matingZone = 60
         self.eatingZone = 15
         self.prey       = 0
-        self.nutrition  = {0: 0.05,
-                           2: -0.01}
+        self.nutrition  = {0: 0.12,
+                           2: -0.008}
         self.hunger     = -0.000001
 
     def birth(self):
@@ -120,10 +121,10 @@ class Plankton(Agent):
         self.zones      = [[{'min': 0, 'max': 5, 'c': 10 }],
                            [{'min': 0, 'max': 1000, 'c': -1000 }],
                            []]
-        self.matingZone = 100
-        self.eatingZone = 70
+        self.matingZone = 700
+        self.eatingZone = 100
         self.prey       = 1
-        self.nutrition  = {0: -0.1, 1: 0.3}
+        self.nutrition  = {0: -0.2, 1: 0.06}
         self.hunger     = -0.000001
 
     def birth(self):
@@ -138,6 +139,7 @@ if __name__ == '__main__':
         psyco.full()
     swarm = [Fish() for x in range(Fishes)]+[Shark() for x in range(Sharks)]+[Plankton() for x in range(Planktii)]
     print '\n'.join(map(str, swarm))+'\ndone'
+    i=0
     while True:
         for a in swarm: a.move(swarm)
         # handle life and death
@@ -145,3 +147,9 @@ if __name__ == '__main__':
         swarm+=Nursery
         Nursery=[]
         print '\n'.join(map(str, swarm))+'\ndone'
+        if i % 50 ==0:
+            counts=[0,0,0]
+            for agent in swarm:
+                counts[agent.species]+=1
+            sys.stderr.write("%d %s\n" % (i,counts))
+        i+=1
