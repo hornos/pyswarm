@@ -1,11 +1,6 @@
 from swarm import Agent, Vector
 import random
 
-# number of swarms
-Fishes = 50
-Sharks = 4
-Planktii = 100
-
 class Fish(Agent):
     def __init__(self):
         self.species    = 0
@@ -62,4 +57,11 @@ class Plankton(Agent):
 
     def breed(self):
         return Plankton()
+
+# number of agents per species in swarm
+Swarm=[
+    (Fish,50),
+    (Shark, 4),
+    (Plankton, 100)
+    ]
 

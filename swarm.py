@@ -38,12 +38,9 @@ class Vector():
 
 class Agent:
     def __str__(self):
-        if self.vitality>0:
-            return "%s %s" % (str(self.pos), self.species)
-        else:
-            return ''
+        return "%s %s" % (str(self.pos), self.species)
 
-    def move(self,swarm):
+    def move(self,swarm,world):
         if self.vitality<=0: return
         v=Vector()
         p=self.pos
@@ -60,7 +57,7 @@ class Agent:
                 agent.vitality+=agent.nutrition[self.species]
             elif agent.species == self.species and self.vitality>=1 and d<self.matingZone:
                 # breed
-                Nursery.append(self.breed())
+                world.swarm[self.species].append(self.breed())
                 self.vitality=0.7
             if self.vitality>2:
                 # glutony results in emptying everything
@@ -69,28 +66,36 @@ class Agent:
                 self.vitality+=self.hunger
         self.pos.add(v.normalize(v.dist(),self.vitality*self.speed))
 
-Nursery=[]
+class World():
+    def __init__(self):
+        self.swarm=[[specie() for i in range(pop)] for specie, pop in Swarm]
+
+    def __str__(self):
+        return '\n'.join(map(str, self.living()))+'\ndone'
+
+    def living(self):
+        return (agent for species in self.swarm for agent in species if agent.vitality>0)
+
+    def nextFrame(self):
+        for a in self.living():
+            a.move(self.living(),self)
+
+    def run(self):
+        i=0
+        while True:
+            print self
+            if i % 50 ==0:
+                counts=[len([1 for agent in species if agent.vitality > 0]) for species in self.swarm]
+                sys.stderr.write("%d %s\n" % (i,counts))
+                if 1 in counts:
+                    sys.exit(0)
+            i+=1
+            self.nextFrame()
 
 if __name__ == '__main__':
     import platform
     if platform.machine() in ['i386', 'i686']:
         import psyco
         psyco.full()
-    swarm = [Fish() for x in range(Fishes)]+[Shark() for x in range(Sharks)]+[Plankton() for x in range(Planktii)]
-    print '\n'.join(map(str, swarm))+'\ndone'
-    i=0
-    while True:
-        for a in swarm: a.move(swarm)
-        # handle life and death
-        swarm=filter(lambda x: x.vitality>0,swarm)
-        swarm+=Nursery
-        Nursery=[]
-        print '\n'.join(map(str, swarm))+'\ndone'
-        if i % 50 ==0:
-            counts=[0,0,0]
-            for agent in swarm:
-                counts[agent.species]+=1
-            sys.stderr.write("%d %s\n" % (i,counts))
-            if 1 in counts:
-                sys.exit(0)
-        i+=1
+
+    World().run()
